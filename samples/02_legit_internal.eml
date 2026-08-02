@@ -1,0 +1,18 @@
+Return-Path: <marta.k@corp.example.org>
+Received: from desk-042.corp.example.org (desk-042.corp.example.org [10.20.30.42])
+ by mail.corp.example.org with ESMTP id 77AA88; Wed, 16 Apr 2025 11:02:10 +0000
+Authentication-Results: mail.corp.example.org;
+ spf=pass smtp.mailfrom=corp.example.org;
+ dkim=pass header.d=corp.example.org;
+ dmarc=pass header.from=corp.example.org
+From: "Marta K." <marta.k@corp.example.org>
+To: stefan@corp.example.org
+Subject: Re: standup moved to 10:15
+Date: Wed, 16 Apr 2025 11:02:09 +0000
+Message-ID: <c0ffee.20250416@corp.example.org>
+In-Reply-To: <beef.20250416@corp.example.org>
+Content-Type: text/plain; charset="utf-8"
+
+Works for me. I'll bring the numbers from the sprint board.
+
+Marta

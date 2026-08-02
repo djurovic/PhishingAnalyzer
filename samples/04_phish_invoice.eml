@@ -1,0 +1,40 @@
+Return-Path: <billing@invoice-portal-cdn.top>
+Received: from mx1.corp.example.org (mx1.corp.example.org [198.51.100.10])
+ by mail.corp.example.org with ESMTPS id 5C6D7E; Fri, 18 Apr 2025 06:12:33 +0000
+Received: from vps-8842.hosting-cheap.net (vps-8842.hosting-cheap.net [185.220.101.7])
+ by mx1.corp.example.org with SMTP id 8H9I0J; Fri, 18 Apr 2025 06:12:30 +0000
+Authentication-Results: mx1.corp.example.org;
+ spf=softfail smtp.mailfrom=invoice-portal-cdn.top;
+ dkim=none;
+ dmarc=fail header.from=accounts-payable.com
+From: "Accounts Payable" <billing@accounts-payable.com>
+Reply-To: "Accounts Payable" <remit-updates@invoice-portal-cdn.top>
+To: stefan@corp.example.org
+Subject: Invoice INV-88213 overdue
+Date: Fri, 18 Apr 2025 06:12:28 +0000
+Message-ID: <inv88213@invoice-portal-cdn.top>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="BOUND4"
+
+--BOUND4
+Content-Type: text/plain; charset="utf-8"
+
+Invoice INV-88213 remains unpaid. The statement is attached.
+Payment portal: http://185.220.101.7/pay/inv88213
+
+Accounts Payable
+--BOUND4
+Content-Type: application/octet-stream; name="Invoice_INV-88213.pdf.js"
+Content-Disposition: attachment; filename="Invoice_INV-88213.pdf.js"
+Content-Transfer-Encoding: base64
+
+dmFyIHggPSAidGhpcyBpcyBhIGhhcm1sZXNzIHBsYWNlaG9sZGVyIGZvciBwYXJzZXIgdGVzdGlu
+ZyI7Cg==
+--BOUND4
+Content-Type: application/zip; name="statement.zip"
+Content-Disposition: attachment; filename="statement.zip"
+Content-Transfer-Encoding: base64
+
+UEsDBAoAAAAAAOaKjVoAAAAAAAAAAAAAAAAJAAAAcGxhY2Vob2xkZXJQSwUGAAAAAAAAAAAAAAAA
+AAAAAAAA
+--BOUND4--

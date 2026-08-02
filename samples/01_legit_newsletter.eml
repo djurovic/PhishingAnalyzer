@@ -1,0 +1,42 @@
+Return-Path: <bounce@news.exampleshop.com>
+Received: from mx1.corp.example.org (mx1.corp.example.org [198.51.100.10])
+ by mail.corp.example.org with ESMTPS id A1B2C3; Tue, 15 Apr 2025 09:14:02 +0000
+Received: from smtp.news.exampleshop.com (smtp.news.exampleshop.com [203.0.113.44])
+ by mx1.corp.example.org with ESMTPS id D4E5F6; Tue, 15 Apr 2025 09:14:01 +0000
+Authentication-Results: mx1.corp.example.org;
+ spf=pass smtp.mailfrom=news.exampleshop.com;
+ dkim=pass header.d=exampleshop.com;
+ dmarc=pass header.from=exampleshop.com
+DKIM-Signature: v=1; a=rsa-sha256; d=exampleshop.com; s=sel1; h=from:subject;
+ b=abcdef1234567890
+From: ExampleShop News <news@exampleshop.com>
+To: stefan@corp.example.org
+Subject: Your April product roundup
+Date: Tue, 15 Apr 2025 09:14:00 +0000
+Message-ID: <20250415091400.111@news.exampleshop.com>
+List-Unsubscribe: <https://exampleshop.com/unsubscribe?id=9931>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="BOUND1"
+
+--BOUND1
+Content-Type: text/plain; charset="utf-8"
+
+Hello Stefan,
+
+Here is what is new this month. Browse the full catalogue at
+https://exampleshop.com/april-roundup
+
+To stop receiving these, visit https://exampleshop.com/unsubscribe?id=9931
+
+-- The ExampleShop team
+--BOUND1
+Content-Type: text/html; charset="utf-8"
+
+<html><body>
+<h1>April roundup</h1>
+<p>Hello Stefan, here is what is new this month.</p>
+<p><a href="https://exampleshop.com/april-roundup">Browse the catalogue</a></p>
+<img src="https://cdn.exampleshop.com/logo.png" alt="logo">
+<p><a href="https://exampleshop.com/unsubscribe?id=9931">Unsubscribe</a></p>
+</body></html>
+--BOUND1--
