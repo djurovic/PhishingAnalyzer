@@ -1,0 +1,22 @@
+{
+  "rules_version": "rules_v1",
+  "phishing_threshold": 1.0,
+  "suspicious_threshold": 0.5,
+  "tuned_on": {
+    "dataset": "dataset/",
+    "split": "tune",
+    "n": 34
+  },
+  "tune_metrics": {
+    "tp": 12,
+    "fp": 2,
+    "tn": 16,
+    "fn": 4,
+    "accuracy": 0.8235,
+    "precision": 0.8571,
+    "recall": 0.75,
+    "f1": 0.8,
+    "fpr": 0.1111
+  },
+  "tuned_at": "2026-08-24T20:24:50+00:00"
+}
