@@ -1,0 +1,106 @@
+{
+  "counts": {
+    "phishing": 100,
+    "legitimate": 100
+  },
+  "parse_failures": 0,
+  "boolean_features": {
+    "reply_to_domain_mismatch": {
+      "phishing_rate": 0.16,
+      "legitimate_rate": 0.0,
+      "separation": 0.16
+    },
+    "return_path_domain_mismatch": {
+      "phishing_rate": 0.14,
+      "legitimate_rate": 0.0,
+      "separation": 0.14
+    },
+    "display_name_contains_email": {
+      "phishing_rate": 0.0,
+      "legitimate_rate": 0.0,
+      "separation": 0.0
+    },
+    "auth_failure": {
+      "phishing_rate": 0.51,
+      "legitimate_rate": 0.16,
+      "separation": 0.35
+    },
+    "has_ip_literal_url": {
+      "phishing_rate": 0.0,
+      "legitimate_rate": 0.0,
+      "separation": 0.0
+    },
+    "has_punycode_url": {
+      "phishing_rate": 0.0,
+      "legitimate_rate": 0.0,
+      "separation": 0.0
+    },
+    "has_anchor_text_mismatch": {
+      "phishing_rate": 0.11,
+      "legitimate_rate": 0.0,
+      "separation": 0.11
+    },
+    "has_redirect_wrapper": {
+      "phishing_rate": 0.1,
+      "legitimate_rate": 0.0,
+      "separation": 0.1
+    },
+    "has_risky_attachment": {
+      "phishing_rate": 0.0,
+      "legitimate_rate": 0.0,
+      "separation": 0.0
+    },
+    "html_present": {
+      "phishing_rate": 1.0,
+      "legitimate_rate": 0.66,
+      "separation": 0.34
+    }
+  },
+  "count_features": {
+    "url_count": {
+      "phishing": 2.0,
+      "legitimate": 1.0
+    },
+    "attachment_count": {
+      "phishing": 0.0,
+      "legitimate": 0.0
+    },
+    "html_hidden_elements": {
+      "phishing": 0.0,
+      "legitimate": 0.0
+    },
+    "html_form_count": {
+      "phishing": 0.0,
+      "legitimate": 0.0
+    },
+    "body_length_chars": {
+      "phishing": 549.5,
+      "legitimate": 185.0
+    }
+  },
+  "temporal": {
+    "phishing": {
+      "span": "2024-2024",
+      "parsed": 98,
+      "by_year": {
+        "2024": 98
+      }
+    },
+    "legitimate": {
+      "span": "2024-2024",
+      "parsed": 100,
+      "by_year": {
+        "2024": 100
+      }
+    },
+    "overlapping_years": [
+      2024
+    ],
+    "overlap_ratio": 1.0
+  },
+  "auth_header_presence": {
+    "phishing": 1.0,
+    "legitimate": 1.0
+  },
+  "flags": []
+}
