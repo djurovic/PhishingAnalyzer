@@ -51,7 +51,7 @@ import sys
 from collections import Counter, defaultdict
 from email.utils import parsedate_to_datetime
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 from eml_parser import parse_eml  # noqa: E402
 
 # Features whose separation is expected and legitimate vs. suspicious.

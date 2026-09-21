@@ -51,12 +51,12 @@ import sys
 import time
 from datetime import datetime, timezone
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 from eml_parser import parse_eml  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG_PATH = os.path.join(ROOT, "logs", "runs.jsonl")
-CONFIG_PATH = os.path.join(ROOT, "rules_config.json")
+CONFIG_PATH = os.path.join(ROOT, "evaluation", "rules_config.json")
 
 MODEL_NAME = "rule_baseline_v1"
 RULES_VERSION = "rules_v1"

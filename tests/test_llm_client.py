@@ -12,8 +12,9 @@ Usage: python3 scripts/test_day4.py
 import json
 import os
 import sys
+from eml_parser import parse_eml
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
 from grounding_check import check_indicators   # noqa: E402
 from llm_client import repair_json, validate_verdict   # noqa: E402
@@ -87,13 +88,13 @@ for label, obj, predicate in schema_cases:
     v, p = validate_verdict(obj)
     check(label, predicate(v, p), f"-> {v.get('verdict')}, problems={p}")
 
-print("\n[3] Grounding check against a real bundle")
-bundle_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                           "out", "03_phish_credential.json")
-if not os.path.exists(bundle_path):
-    print(f"  skip  (no bundle at {bundle_path}; run the Day 3 parser first)")
+print("\n[3] Grounding check against a parsed sample")
+sample_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                           "samples", "03_phish_credential.eml")
+if not os.path.exists(sample_path):
+    print(f"  skip  (no sample at {sample_path}; run tests/make_samples.py samples/)")
 else:
-    bundle = json.load(open(bundle_path, encoding="utf-8"))
+    bundle = parse_eml(sample_path)
     verdict = {"indicators": [
         {"indicator": "SPF fail", "evidence_field": "authentication.spf",
          "evidence_value": "fail", "severity": "high"},

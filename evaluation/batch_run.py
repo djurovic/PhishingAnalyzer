@@ -32,7 +32,7 @@ import sys
 import time
 from datetime import datetime, timezone
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
 from eml_parser import parse_eml                              # noqa: E402
 from grounding_check import check_indicators                  # noqa: E402
