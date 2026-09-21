@@ -22,6 +22,7 @@ import os
 import sys
 import tempfile
 import time
+import urllib.request
 from datetime import datetime, timezone
 
 import streamlit as st
@@ -207,15 +208,52 @@ st.caption(f"Prompt: ~{budget['estimated_prompt_tokens']} estimated tokens "
 with st.expander("Inspect the exact prompt being sent"):
     st.code(user_msg, language="json")
 
+USE_SERVICE = os.environ.get("PA_USE_SERVICE", "1") == "1"
+SERVICE_URL = os.environ.get("PA_SERVICE_URL", "http://127.0.0.1:8000")
+
 if st.button("Analyse with Llama", type="primary", use_container_width=True):
-    client = OllamaClient(host=host, model=model)
     with st.spinner(f"Querying {model}..."):
         started = time.time()
-        try:
-            result = client.analyse(system_prompt, user_msg, max_retries=retries)
-        except OllamaError as exc:
-            st.error(str(exc))
-            st.stop()
+        if USE_SERVICE:
+            try:
+                req = urllib.request.Request(
+                    SERVICE_URL.rstrip("/") + "/analyze?include_bundle=false",
+                    data=raw,
+                    headers={"Content-Type": "application/octet-stream"},
+                    method="POST")
+                with urllib.request.urlopen(req, timeout=240) as resp:
+                    payload = json.loads(resp.read().decode("utf-8"))
+                result = {
+                    "verdict": payload["verdict"],
+                    "model": payload["meta"]["model"],
+                    "total_latency_s": payload["meta"]["latency_s"],
+                    "attempts": [{
+                        "attempt": payload["reliability"]["attempt_count"],
+                        "latency_s": payload["meta"]["latency_s"],
+                        "repairs": payload["reliability"]["repairs"],
+                        "schema_problems": payload["reliability"]["schema_problems"],
+                        "raw_content": payload.get("raw_response", ""),
+                    }],
+                }
+                st.caption(f"Analysed via the local service at {SERVICE_URL}")
+            except Exception as exc:
+                # Fall back so a service crash mid-demo does not take the UI down.
+                st.warning(f"Service unavailable ({exc}); calling the analyser "
+                           "directly instead.")
+                client = OllamaClient(host=host, model=model)
+                try:
+                    result = client.analyse(system_prompt, user_msg,
+                                            max_retries=retries)
+                except OllamaError as e2:
+                    st.error(str(e2))
+                    st.stop()
+        else:
+            client = OllamaClient(host=host, model=model)
+            try:
+                result = client.analyse(system_prompt, user_msg, max_retries=retries)
+            except OllamaError as exc:
+                st.error(str(exc))
+                st.stop()
     st.session_state["result"] = result
     st.session_state["elapsed"] = time.time() - started
 
