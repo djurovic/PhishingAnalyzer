@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 """
-eml_parser.py — Day 3 of the LLM-Powered Phishing Email Analyzer.
+eml_parser.py — deterministic feature extraction.
 
-Deterministic extraction stage: turns a raw .eml file into a clean JSON
-"feature bundle". No LLM involved here. The LLM (Day 4) only ever sees
-the JSON this produces, never the raw email.
+Turns a raw RFC 822 message into a JSON "feature bundle". No language model is
+involved here; the model only ever sees the bundle this produces, never the
+raw message.
 
-Safety notes:
-  * HTML is never rendered, only parsed as text.
-  * Attachments are never written to disk or executed — only hashed.
-  * URLs are defanged in the output (hxxp://, [.]) so nothing in a report
-    or terminal is clickable.
+Safety:
+  * HTML is parsed as text, never rendered.
+  * Attachments are hashed in memory, never written to disk or executed.
+  * URLs are defanged in the output (hxxp://, [.]).
 
 Usage:
-    python3 scripts/eml_parser.py samples/example.eml
-    python3 scripts/eml_parser.py samples/example.eml -o out/example.json
-    python3 scripts/eml_parser.py --dir samples/ -o out/
+    python3 scripts/eml_parser.py samples/03_phish_credential.eml
+    python3 scripts/eml_parser.py samples/03_phish_credential.eml -o bundle.json
+    python3 scripts/eml_parser.py --dir samples/ -o bundles/
 """
 
 from __future__ import annotations
@@ -23,6 +22,8 @@ from __future__ import annotations
 import argparse
 import email
 import email.policy
+import email.header
+import email.utils
 import hashlib
 import html
 import json
@@ -493,7 +494,7 @@ def extract_bodies_and_attachments(msg) -> tuple[str, str, list[dict]]:
 
 
 # ---------------------------------------------------------------------------
-# Derived signals (deterministic — these also form the Day 6 rule baseline)
+# Derived signals (deterministic — also the input to evaluation/rule_baseline.py)
 # ---------------------------------------------------------------------------
 
 
@@ -545,8 +546,13 @@ def build_derived(headers: dict, auth: dict, urls: list[dict],
 
 
 def parse_eml(path: str) -> dict:
+    """Parse an .eml file from disk."""
     with open(path, "rb") as fh:
-        raw = fh.read()
+        return parse_bytes(fh.read(), source_name=os.path.basename(path))
+
+
+def parse_bytes(raw: bytes, source_name: str = "message.eml") -> dict:
+    """Parse a raw RFC 822 message held in memory. Nothing is written to disk."""
     msg = email.message_from_bytes(raw, policy=email.policy.default)
 
     headers = {
@@ -608,7 +614,7 @@ def parse_eml(path: str) -> dict:
 
     return {
         "meta": {
-            "source_file": os.path.basename(path),
+            "source_file": source_name,
             "file_size_bytes": len(raw),
             "raw_sha256": sha256_bytes(raw),
             "parsed_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),

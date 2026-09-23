@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-batch_run.py — Day 5. Runs the analyser over a labelled corpus.
+batch_run.py — runs the analyser
 
 Built around one assumption: the run WILL be interrupted. 200 emails at ~6s is
 twenty minutes of a laptop staying awake, a VM staying up, and Ollama not
@@ -12,13 +12,13 @@ starts fresh, which is what you want when comparing prompt v1 against v2.
 
 Usage:
     # pilot first — 10 emails, confirms latency before committing
-    python3 scripts/batch_run.py --dataset dataset/ --split tune --limit 10
+    python3 evaluation/batch_run.py --dataset dataset/ --split tune --limit 10
 
     # the real run
-    python3 scripts/batch_run.py --dataset dataset/ --split eval
+    python3 evaluation/batch_run.py --dataset dataset/ --split eval
 
     # resume after an interruption (same command; already-done work is skipped)
-    python3 scripts/batch_run.py --dataset dataset/ --split eval
+    python3 evaluation/batch_run.py --dataset dataset/ --split eval
 """
 
 from __future__ import annotations
@@ -246,8 +246,7 @@ def main() -> int:
         print("Verdicts: " + ", ".join(f"{k}={v}" for k, v in sorted(verdict_counts.items())))
     print(f"Log:      {LOG_PATH}")
     print("=" * 62)
-    print("\nNext: python3 scripts/evaluate.py --dataset {} --split {}".format(
-        args.dataset, args.split))
+    print(f"\nNext: python3 evaluation/evaluate.py --split {args.split}")
     return 0
 
 

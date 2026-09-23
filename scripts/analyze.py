@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 """
-analyze.py — Day 4. End-to-end: .eml (or bundle) -> LLM verdict -> report.
+analyze.py — command-line analysis of one or more .eml files.
 
-Every run appends one JSON line to logs/runs.jsonl containing the prompt
-version, model, latency, token counts, repair history, schema problems, the
-grounding check, and the raw model output. That log is the raw material for
-the Day 6 evaluation — do not delete it, and do not let it be the thing you
-wish you had captured after a 200-email batch run.
+Uses the same analyze_email() as the service. Each run appends a line to
+logs/runs.jsonl. Also provides render_report(), which app.py imports.
 
 Usage:
     python3 scripts/analyze.py samples/03_phish_credential.eml
-    python3 scripts/analyze.py out/03_phish_credential.json --from-bundle
     python3 scripts/analyze.py --dir samples/ --report-dir reports/
-    python3 scripts/analyze.py --check          # connectivity only
+    python3 scripts/analyze.py samples/03_phish_credential.eml --dry-run
+    python3 scripts/analyze.py --check
 """
 
 from __future__ import annotations
@@ -25,10 +22,10 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from eml_parser import parse_eml                       # noqa: E402
-from grounding_check import check_indicators           # noqa: E402
+from analyzer_core import AnalyzerError, analyze_email             # noqa: E402
+from eml_parser import parse_bytes                                 # noqa: E402
 from llm_client import DEFAULT_HOST, DEFAULT_MODEL, OllamaClient, OllamaError  # noqa: E402
-from prompt_builder import (build_prompt_input, budget_report,  # noqa: E402
+from prompt_builder import (build_prompt_input, budget_report,     # noqa: E402
                             load_system_prompt, render_user_message)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -110,77 +107,59 @@ def render_report(bundle: dict, verdict: dict, grounding: dict, meta: dict) -> s
     return "\n".join(lines)
 
 
-def analyse_one(path: str, client: OllamaClient, system: str, args) -> dict | None:
-    if args.from_bundle:
-        with open(path, encoding="utf-8") as fh:
-            bundle = json.load(fh)
-    else:
-        bundle = parse_eml(path)
-
-    condensed = build_prompt_input(bundle, args.body_chars)
-    user = render_user_message(condensed)
-    budget = budget_report(system, user)
+def analyse_one(path: str, args) -> dict | None:
+    name = os.path.basename(path)
+    with open(path, "rb") as fh:
+        raw = fh.read()
 
     if args.dry_run:
-        print(f"--- {os.path.basename(path)} "
-              f"(~{budget['estimated_prompt_tokens']} est. prompt tokens)")
+        bundle = parse_bytes(raw, source_name=name)
+        system = load_system_prompt(args.prompt_version)
+        user = render_user_message(build_prompt_input(bundle, args.body_chars))
+        est = budget_report(system, user)["estimated_prompt_tokens"]
+        print(f"--- {name} (~{est} est. prompt tokens)")
         print(user)
         return None
 
     try:
-        result = client.analyse(system, user, max_retries=args.retries)
-    except OllamaError as exc:
-        print(f"[FAIL] {os.path.basename(path)}: {exc}", file=sys.stderr)
+        result = analyze_email(raw, model=args.model, host=args.host,
+                               prompt_version=args.prompt_version,
+                               body_chars=args.body_chars, retries=args.retries,
+                               timeout=args.timeout, source_name=name)
+    except AnalyzerError as exc:
+        print(f"[FAIL] {name}: {exc}", file=sys.stderr)
         return None
 
-    verdict = result["verdict"]
-    grounding = check_indicators(bundle, verdict)
-
-    meta = {
-        "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "model": result["model"],
-        "prompt_version": args.prompt_version,
-        "latency_s": result["total_latency_s"],
-    }
+    bundle, verdict = result["bundle"], result["verdict"]
+    grounding, meta, rel = result["grounding"], result["meta"], result["reliability"]
 
     log_run({
-        **meta,
-        "source_file": bundle["meta"]["source_file"],
-        "raw_sha256": bundle["meta"]["raw_sha256"],
-        "estimated_prompt_tokens": budget["estimated_prompt_tokens"],
-        "actual_prompt_tokens": result["attempts"][-1].get("prompt_tokens"),
-        "response_tokens": result["attempts"][-1].get("response_tokens"),
-        "attempt_count": len(result["attempts"]),
-        "json_ok_first_try": (len(result["attempts"]) == 1
-                              and not result["attempts"][0]["repairs"]),
-        "repairs": [r for a in result["attempts"] for r in a["repairs"]],
-        "schema_problems": [p for a in result["attempts"]
-                            for p in a.get("schema_problems", [])],
+        **{k: meta[k] for k in ("timestamp", "model", "prompt_version", "latency_s",
+                                "source_file", "raw_sha256", "estimated_prompt_tokens",
+                                "actual_prompt_tokens", "response_tokens")},
+        **rel,
         "verdict": verdict,
         "grounding": {k: v for k, v in grounding.items() if k != "details"},
         "grounding_details": grounding["details"],
-        "raw_response": result["attempts"][-1]["raw_content"],
+        "raw_response": result["raw_response"],
     })
 
+    report_path = None
     if args.report_dir:
         os.makedirs(args.report_dir, exist_ok=True)
-        stem = os.path.splitext(bundle["meta"]["source_file"])[0]
-        report_path = os.path.join(args.report_dir, stem + ".md")
+        report_path = os.path.join(args.report_dir,
+                                   os.path.splitext(meta["source_file"])[0] + ".md")
         with open(report_path, "w", encoding="utf-8") as fh:
             fh.write(render_report(bundle, verdict, grounding, meta))
-    else:
-        report_path = None
 
     icon = VERDICT_ICON.get(verdict["verdict"], "[?]")
     ground = (f"{grounding['verified']}/{grounding['indicator_count']} grounded"
               if grounding["indicator_count"] else "no indicators")
-    retry_note = "" if len(result["attempts"]) == 1 else f" | {len(result['attempts'])} attempts"
-    print(f"{icon:<15} {bundle['meta']['source_file']:<28} "
-          f"conf={verdict['confidence']:.2f} | {ground} | "
-          f"{result['total_latency_s']}s{retry_note}")
+    retry_note = "" if rel["attempt_count"] == 1 else f" | {rel['attempt_count']} attempts"
+    print(f"{icon:<15} {meta['source_file']:<28} conf={verdict['confidence']:.2f} | "
+          f"{ground} | {meta['latency_s']}s{retry_note}")
     if report_path:
         print(f"{'':<15} -> {report_path}")
-
     return result
 
 
@@ -188,8 +167,6 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Analyse an email with the local LLM.")
     ap.add_argument("target", nargs="?", help=".eml file, or .json bundle with --from-bundle")
     ap.add_argument("--dir", help="process every .eml (or .json) in this directory")
-    ap.add_argument("--from-bundle", action="store_true",
-                    help="input is an already-parsed Day 3 JSON bundle")
     ap.add_argument("--report-dir", help="write a Markdown report per email")
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--host", default=DEFAULT_HOST)
@@ -219,10 +196,9 @@ def main() -> int:
     if not args.target and not args.dir:
         ap.error("give a file, or --dir, or --check")
 
-    system = load_system_prompt(args.prompt_version)
 
     if args.dir:
-        ext = ".json" if args.from_bundle else ".eml"
+        ext = ".eml"
         targets = sorted(os.path.join(args.dir, f) for f in os.listdir(args.dir)
                          if f.lower().endswith(ext))
         if not targets:
@@ -239,7 +215,7 @@ def main() -> int:
             return 1
 
     for path in targets:
-        analyse_one(path, client, system, args)
+        analyse_one(path, args)
 
     if not args.dry_run:
         print(f"\nLogged to {LOG_PATH}")

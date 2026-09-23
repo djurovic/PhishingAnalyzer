@@ -1,76 +1,33 @@
 #!/usr/bin/env python3
 """
-analyzer_core.py — Day 7. The single analysis entry point.
+analyzer_core.py — the single analysis entry point.
 
-One function, `analyze_email(raw_bytes) -> dict`, wrapping the pipeline that
-was previously reachable only through the CLI or the Streamlit UI. Everything
-it calls is unchanged: same parser, same prompt files, same client, same
-grounding check. This is a wrapper, not a rewrite — the Day 5/6 evaluation
-results stay valid precisely because the analysis path is identical.
-
-WHY A NEW MODULE RATHER THAN EDITING analyze.py
-
-The Day 7 plan said to move this logic into analyze.py. Putting it in its own
-module instead, for two reasons:
-
-  1. analyze.py already works and is already committed. A new file cannot
-     break it. Editing a working CLI mid-project to enable a presentation
-     feature is avoidable risk.
-  2. It separates roles cleanly: analyze.py is a command-line program,
-     analyzer_core.py is a library. service.py, app.py and analyze.py all
-     import the same function, which is what the plan actually wanted —
-     one analysis path, three clients.
-
-If you prefer to follow the plan literally, paste `analyze_email` into
-analyze.py instead and import it from there; nothing else changes.
-
-Usage:
-    from analyzer_core import analyze_email
-    result = analyze_email(open("sample.eml", "rb").read())
+analyze_email(raw_bytes) -> dict runs the whole pipeline: parse, condense,
+prompt, model call, grounding check. service.py, app.py and scripts/analyze.py
+all call this one function, so evaluation results describe every client.
 """
 
 from __future__ import annotations
 
 import os
 import sys
-import tempfile
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from eml_parser import parse_eml                              # noqa: E402
+from eml_parser import parse_bytes                              # noqa: E402
 from grounding_check import check_indicators                  # noqa: E402
 from llm_client import (DEFAULT_HOST, DEFAULT_MODEL,          # noqa: E402
                         OllamaClient, OllamaError)
-from prompt_builder import (build_prompt_input, budget_report,  # noqa: E402
-                            load_system_prompt, render_user_message)
+from prompt_builder import (DEFAULT_BODY_CHARS, build_prompt_input,  # noqa: E402
+                            budget_report, load_system_prompt,
+                            render_user_message)
 
-DEFAULT_BODY_CHARS = 1200
 DEFAULT_PROMPT_VERSION = "v1"
-
 
 class AnalyzerError(RuntimeError):
     """Raised when analysis cannot be attempted at all (e.g. Ollama down)."""
 
-
-def parse_bytes(raw: bytes) -> dict:
-    """
-    parse_eml takes a path, so write to a temp file and delete it immediately.
-
-    The file exists inside the VM's temp directory for the duration of one
-    parse and is removed in the finally block regardless of outcome. Phishing
-    bytes are never persisted.
-    """
-    tmp = tempfile.NamedTemporaryFile(suffix=".eml", delete=False)
-    try:
-        tmp.write(raw)
-        tmp.close()
-        return parse_eml(tmp.name)
-    finally:
-        try:
-            os.unlink(tmp.name)
-        except OSError:
-            pass
 
 
 def analyze_email(raw_bytes: bytes,
@@ -80,7 +37,8 @@ def analyze_email(raw_bytes: bytes,
                   body_chars: int = DEFAULT_BODY_CHARS,
                   retries: int = 1,
                   timeout: int = 180,
-                  include_bundle: bool = True) -> dict:
+                  include_bundle: bool = True,
+                  source_name: str = "message.eml") -> dict:
     """
     Analyse one raw email. Returns a dict with the same shape the Streamlit UI
     already renders.
@@ -97,7 +55,7 @@ def analyze_email(raw_bytes: bytes,
     Raises AnalyzerError only for transport failure (Ollama unreachable).
     A model that misbehaves produces a structured result, not an exception.
     """
-    bundle = parse_bytes(raw_bytes)
+    bundle = parse_bytes(raw_bytes, source_name=source_name)
 
     condensed = build_prompt_input(bundle, body_chars)
     user_msg = render_user_message(condensed)

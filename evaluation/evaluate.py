@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-evaluate.py — Day 5. Computes metrics from logs/runs.jsonl.
+evaluate.py — computes metrics
 
 Metrics are computed in plain Python rather than scikit-learn. A binary
 confusion matrix is four counted integers; importing sklearn to count them
@@ -26,9 +26,9 @@ that abstains on 40% of mail is not usable regardless of its accuracy on the
 rest.
 
 Usage:
-    python3 scripts/evaluate.py --dataset dataset/ --split eval
-    python3 scripts/evaluate.py --split eval --csv results/predictions.csv
-    python3 scripts/evaluate.py --split eval --errors 5
+    python3 evaluation/evaluate.py --split eval
+    python3 evaluation/evaluate.py --split eval --csv results/predictions.csv
+    python3 evaluation/evaluate.py --split eval --errors 5
 """
 
 from __future__ import annotations
@@ -128,7 +128,6 @@ def print_block(name: str, m: dict) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Compute evaluation metrics.")
-    ap.add_argument("--dataset", default="dataset")
     ap.add_argument("--split", default="eval", help="tune | eval | all")
     ap.add_argument("--model", default=None, help="restrict to one model")
     ap.add_argument("--prompt-version", default=None)

@@ -33,8 +33,8 @@ own inbox, report those numbers alongside these — the comparison is itself
 worth writing about.
 
 Usage:
-    python3 scripts/make_ham.py --count 200 --out corpora/ham/synthetic_ham.mbox
-    python3 scripts/make_ham.py --count 200 --year 2024 --seed 42 --out corpora/ham/synthetic_ham.mbox
+    python3 evaluation/make_ham.py --count 200 --out corpora/ham/synthetic_ham.mbox
+    python3 evaluation/make_ham.py --count 200 --year 2024 --seed 42 --out corpora/ham/synthetic_ham.mbox
 """
 
 from __future__ import annotations

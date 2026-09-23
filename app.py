@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 """
-app.py — Day 5. Streamlit UI for single-email triage.
+app.py — Streamlit UI for inspecting a single email.
 
-Run from the project root, inside the VM:
+A development and inspection tool; the service is the primary interface.
+Analysis goes through the service (PA_USE_SERVICE=1, the default) and falls
+back to a direct call if the service is unavailable.
+
     streamlit run app.py
 
-Safety notes for the demo (say these on camera):
-  * Uploaded content is held in memory and parsed; the .eml is never written
-    to disk by this app.
-  * HTML is never rendered. The raw HTML view is escaped and shown inside a
-    code block, so a phishing page cannot execute or load remote images in
-    the browser showing this UI.
-  * All URLs are displayed defanged.
-  * Attachments are hashed, never saved or opened.
+Safety: the upload is parsed in memory and never written to disk; HTML is
+shown escaped, never rendered; URLs are defanged; attachments are only hashed.
 """
 
 from __future__ import annotations
@@ -20,7 +17,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import tempfile
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -30,12 +26,13 @@ import streamlit as st
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts"))
 
 from analyze import render_report                              # noqa: E402
-from eml_parser import parse_eml                               # noqa: E402
+from eml_parser import parse_bytes                              # noqa: E402
 from grounding_check import check_indicators                   # noqa: E402
 from llm_client import DEFAULT_HOST, DEFAULT_MODEL, OllamaClient, OllamaError  # noqa: E402
-from prompt_builder import (build_prompt_input, budget_report,  # noqa: E402
-                            load_system_prompt, render_user_message)
-
+from prompt_builder import (PROMPT_DIR, build_prompt_input,  # noqa: E402
+                            budget_report, load_system_prompt,
+                            render_user_message)
+                            
 st.set_page_config(page_title="Phishing Email Analyzer", page_icon="[@]", layout="wide")
 
 VERDICT_STYLE = {
@@ -46,24 +43,6 @@ VERDICT_STYLE = {
 }
 
 
-def parse_uploaded(data: bytes) -> dict:
-    """
-    parse_eml takes a path, so write to a temp file and delete it immediately.
-    The file lives inside the VM, in the OS temp dir, for the duration of one
-    parse. Deleted in the finally block regardless of outcome.
-    """
-    tmp = tempfile.NamedTemporaryFile(suffix=".eml", delete=False)
-    try:
-        tmp.write(data)
-        tmp.close()
-        return parse_eml(tmp.name)
-    finally:
-        try:
-            os.unlink(tmp.name)
-        except OSError:
-            pass
-
-
 # ---------------------------------------------------------------------------
 # Sidebar
 # ---------------------------------------------------------------------------
@@ -72,7 +51,9 @@ with st.sidebar:
     st.header("Configuration")
     host = st.text_input("Ollama host", value=DEFAULT_HOST)
     model = st.text_input("Model", value=DEFAULT_MODEL)
-    prompt_version = st.selectbox("Prompt version", ["v1", "v2"], index=0)
+    versions = sorted(f[len("system_"):-len(".txt")] for f in os.listdir(PROMPT_DIR)
+                      if f.startswith("system_") and f.endswith(".txt"))
+    prompt_version = st.selectbox("Prompt version", versions, index=0)
     body_chars = st.slider("Body excerpt (chars)", 400, 3000, 1200, step=100)
     retries = st.slider("Retries on bad JSON", 0, 3, 1)
 
@@ -84,6 +65,8 @@ with st.sidebar:
             st.caption("Models: " + (", ".join(models) or "(none pulled)"))
         except OllamaError as exc:
             st.error(str(exc))
+            st.caption("Host and model apply to the direct-call fallback. The service "
+               "uses its own configuration (PA_OLLAMA_URL, PA_MODEL).")
 
     st.divider()
     st.caption(
@@ -107,7 +90,7 @@ if not uploaded:
 
 raw = uploaded.read()
 try:
-    bundle = parse_uploaded(raw)
+    bundle = parse_bytes(raw, source_name=uploaded.name)
 except Exception as exc:
     st.error(f"Could not parse this file: {type(exc).__name__}: {exc}")
     st.stop()

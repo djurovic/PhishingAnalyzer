@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-compare_systems.py — Day 6. LLM vs rule baseline, head to head.
+compare_systems.py — LLM vs rule baseline
 
 WHY A PAIRED TEST
 
@@ -23,7 +23,7 @@ comparison is underpowered rather than quoting a non-significant p-value as
 if it were evidence of equivalence.
 
 Usage:
-    python3 scripts/compare_systems.py --split eval \
+    python3 evaluation/compare_systems.py --split eval \
         --a llama3.2 --b rule_baseline_v1
 """
 

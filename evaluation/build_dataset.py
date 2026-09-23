@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-build_dataset.py — Day 5. Assembles a labelled evaluation corpus.
+build_dataset.py — assembles
 
 Ingests three source shapes and normalises them into one flat directory of
 .eml files plus a manifest CSV carrying the ground-truth label.
@@ -26,10 +26,10 @@ eval results and then change the prompt, those numbers are no longer clean and
 the report has to say so.
 
 Usage:
-    python3 scripts/build_dataset.py \
-        --phishing-mbox corpora/nazario/phishing3.mbox \
-        --legit-maildir corpora/enron/maildir \
-        --legit-limit 100 --phishing-limit 100 \
+    python3 evaluation/build_dataset.py \
+        --phishing-mbox corpora/nazario/phishing-2024 \
+        --legit-mbox corpora/ham/synthetic_ham.mbox \
+        --phishing-limit 100 --legit-limit 100 \
         --out dataset/
 
     python3 scripts/build_dataset.py --phishing-dir raw/phish --legit-dir raw/ham --out dataset/

@@ -175,15 +175,21 @@ def process_once(conn: imaplib.IMAP4_SSL, service_url: str,
         print(f"    from {summary['from'][:60]}")
 
         if len(raw) > MAX_BYTES:
-            print(f"    [SKIP] {len(raw)} bytes exceeds service limit")
+       	    print(f"    [SKIP] {len(raw)} bytes exceeds service limit; marking Seen")
+        if not dry_run:
+            conn.store(msg_id, "+FLAGS", "\\Seen")
             continue
 
         try:
             result = post_to_service(service_url, raw)
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", "replace")[:200]
-            print(f"    [FAIL] service returned HTTP {exc.code}: {body}",
+            permanent = 400 <= exc.code < 500
+            print(f"    [FAIL] service returned HTTP {exc.code}: {body}"
+                  + ("; marking Seen, will not retry" if permanent else "; will retry"),
                   file=sys.stderr)
+            if permanent and not dry_run:
+                conn.store(msg_id, "+FLAGS", "\\Seen")
             continue
         except Exception as exc:
             print(f"    [FAIL] {type(exc).__name__}: {exc}", file=sys.stderr)

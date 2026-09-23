@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
 """
-prompt_builder.py — Day 4. Turns a Day 3 feature bundle into LLM prompt input.
+prompt_builder.py — turns a feature bundle into the model's input.
 
-The full bundle is too big and too noisy for a 3B model. This module selects a
-subset, trims it to a token budget, and renders it as the user message.
+The full bundle is too large and noisy for a 3B model. This selects a subset,
+trims it to a token budget, and renders it as the user message.
 
-Design rule: everything the model is asked to cite as evidence MUST be present
-in the condensed view. If a field is dropped here, the model cannot ground an
-indicator in it, and grounding_check.py would then flag the citation as
-unverifiable. Condensing and verification are two halves of the same contract.
-
-Usage as a library:
-    from prompt_builder import build_prompt_input, render_user_message
+Rule: anything the model may cite as evidence must survive condensing here,
+otherwise grounding_check.py will grade the citation as unverifiable.
 """
 
 from __future__ import annotations
@@ -28,7 +23,7 @@ CHARS_PER_TOKEN = 4.0
 DEFAULT_BODY_CHARS = 1200
 MAX_URLS = 8
 MAX_ATTACHMENTS = 6
-MAX_HOPS = 3
+
 
 PROMPT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prompts")
 
@@ -55,7 +50,12 @@ def defang_body(text: str) -> str:
     return _URL_IN_TEXT.sub(_sub, text)
 
 
+_VERSION_RE = re.compile(r"^[A-Za-z0-9_]{1,20}$")
+
+
 def load_system_prompt(version: str = "v1") -> str:
+    if not _VERSION_RE.match(version):
+        raise ValueError(f"invalid prompt version: {version!r}")
     path = os.path.join(PROMPT_DIR, f"system_{version}.txt")
     with open(path, "r", encoding="utf-8") as fh:
         return fh.read().strip()
@@ -188,13 +188,14 @@ if __name__ == "__main__":
     import argparse
 
     ap = argparse.ArgumentParser(description="Preview the prompt built from a feature bundle.")
-    ap.add_argument("bundle_json")
+    ap.add_argument("eml")
     ap.add_argument("--body-chars", type=int, default=DEFAULT_BODY_CHARS)
     ap.add_argument("--full", action="store_true", help="print the system prompt too")
     args = ap.parse_args()
 
-    with open(args.bundle_json, encoding="utf-8") as fh:
-        bundle = json.load(fh)
+    from eml_parser import parse_eml
+    bundle = parse_eml(args.eml)
+        
 
     system = load_system_prompt()
     condensed = build_prompt_input(bundle, args.body_chars)

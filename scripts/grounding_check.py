@@ -84,18 +84,26 @@ def _normalise(value) -> str:
 def value_matches(claimed: str, actual) -> bool:
     c = _normalise(claimed)
     a = _normalise(actual)
-    if not c:
+    # An empty value on either side cannot confirm anything. Without this,
+    # "" in c is always true, and citing an empty field (e.g. a missing
+    # Reply-To, or an empty list) would grade as verified.
+    if not c or not a:
         return False
     if c == a:
         return True
-    # Substring either way: the model often quotes part of a list or
-    # paraphrases a long value.
-    if c in a or a in c:
-        return True
-    # Defanging differences shouldn't count as a mismatch.
+
     def refang(s):
         return s.replace("hxxps", "https").replace("hxxp", "http").replace("[.]", ".")
-    return refang(c) == refang(a) or refang(c) in refang(a)
+
+    # Substring matching either way (the model often quotes part of a list or
+    # paraphrases a long value), but only for values long enough that a
+    # substring match means something: "0" should not match "10".
+    for x, y in ((c, a), (refang(c), refang(a))):
+        if x == y:
+            return True
+        if min(len(x), len(y)) >= 3 and (x in y or y in x):
+            return True
+    return False
 
 
 def check_indicators(bundle: dict, verdict: dict) -> dict:

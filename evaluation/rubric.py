@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-rubric.py — Day 6. Samples, scores and reports on explanation quality.
+rubric.py — samples, scores
 
 WHAT THIS MEASURES THAT THE METRICS DO NOT
 
@@ -43,9 +43,9 @@ Knowing an email is phishing makes a confident phishing explanation read as
 than the explanation. Labels are joined back in only at report time.
 
 Usage:
-    python3 scripts/rubric.py sample --split eval --n 40
-    python3 scripts/rubric.py score          # interactive, resumable
-    python3 scripts/rubric.py report
+    python3 evaluation/rubric.py sample --split eval --n 40
+    python3 evaluation/rubric.py score          # interactive, resumable
+    python3 evaluation/rubric.py report
 """
 
 from __future__ import annotations
@@ -157,7 +157,7 @@ def do_sample(args) -> int:
     print(f"\nSampled {len(chosen)} items -> {SAMPLE_PATH}")
     for s in sorted(got):
         print(f"  {s:<28} {got[s]:>4}")
-    print("\nNext: python3 scripts/rubric.py score")
+    print("\nNext: python3 evaluation/rubric.py score")
     return 0
 
 
@@ -256,7 +256,7 @@ def do_score(args) -> int:
         save_scores(scores)
 
     print(f"\nDone. {len(scores)} items scored -> {SCORES_PATH}")
-    print("Next: python3 scripts/rubric.py report")
+    print("Next: python3 evaluation/rubric.py report")
     return 0
 
 

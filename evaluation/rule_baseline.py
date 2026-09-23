@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-rule_baseline.py — Day 6. Deterministic classifier, no LLM.
+rule_baseline.py — deterministic classifier, no LLM.
 
 WHY A BASELINE AT ALL
 
@@ -35,9 +35,9 @@ single scalar threshold is. That keeps the baseline honest as a
 weakly-trained classifier.
 
 Usage:
-    python3 scripts/rule_baseline.py --tune --dataset dataset/
-    python3 scripts/rule_baseline.py --run  --dataset dataset/ --split eval
-    python3 scripts/evaluate.py --split eval --model rule_baseline_v1
+    python3 evaluation/rule_baseline.py --tune --dataset dataset/
+    python3 evaluation/rule_baseline.py --run  --dataset dataset/ --split eval
+    python3 evaluation/evaluate.py --split eval --model rule_baseline_v1
 """
 
 from __future__ import annotations
@@ -46,7 +46,6 @@ import argparse
 import csv
 import json
 import os
-import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -179,8 +178,6 @@ def to_verdict(score: float, phish_threshold: float, susp_threshold: float,
         verdict = "phishing"
     elif score >= susp_threshold:
         verdict = "suspicious"
-    elif not hits:
-        verdict = "legitimate"
     else:
         verdict = "legitimate"
     confidence = max(0.0, min(1.0, score / (phish_threshold * 1.6))) if phish_threshold else 0.0
@@ -371,6 +368,8 @@ def do_run(args) -> int:
                     for ind in verdict["indicators"]],
                 "raw_response": "",
             }, ensure_ascii=False) + "\n")
+            log_fh.flush()
+            os.fsync(log_fh.fileno())
 
             if args.verbose:
                 mark = "ok " if ((verdict["verdict"] in ("phishing", "suspicious"))
@@ -379,12 +378,15 @@ def do_run(args) -> int:
                       f"true={r['label'][:5]:<5} -> {verdict['verdict'][:12]:<12} "
                       f"{mark} score={score:.1f}")
 
-    total_latency = sum(1 for _ in rows)
+
     print(f"\nScored {len(rows)} emails. Verdicts: "
           + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
     print(f"Log: {LOG_PATH}")
     print(f"\nNext: python3 scripts/evaluate.py --split {args.split} "
           f"--model {MODEL_NAME}")
+    print(f"\nNext: python3 evaluation/evaluate.py --split {args.split} "
+          f"--model {MODEL_NAME}")
+          
     return 0
 
 

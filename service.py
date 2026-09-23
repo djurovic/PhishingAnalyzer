@@ -85,7 +85,7 @@ def health(model: str = Query(DEFAULT_MODEL), host: str = Query(DEFAULT_HOST)) -
     process is running. A health check that returns 200 while the model is
     unreachable is worse than none — it hides the failure.
     """
-    status = ping(host=host, model=model)
+    status = ping()
     body = {
         "service": "up",
         "service_version": SERVICE_VERSION,
@@ -99,11 +99,9 @@ def health(model: str = Query(DEFAULT_MODEL), host: str = Query(DEFAULT_HOST)) -
 @app.post("/analyze")
 def analyze(
     raw: bytes = Body(..., media_type="application/octet-stream"),
-    model: str = Query(DEFAULT_MODEL),
-    host: str = Query(DEFAULT_HOST),
-    prompt_version: str = Query(DEFAULT_PROMPT_VERSION),
-    body_chars: int = Query(DEFAULT_BODY_CHARS),
-    retries: int = Query(1),
+    prompt_version: str = Query(DEFAULT_PROMPT_VERSION, pattern=r"^[A-Za-z0-9_]{1,20}$"),
+    body_chars: int = Query(DEFAULT_BODY_CHARS, ge=200, le=4000),
+    retries: int = Query(1, ge=0, le=3),
     include_bundle: bool = Query(False,
                                  description="include the full parsed feature "
                                              "bundle; off by default to keep "
@@ -123,10 +121,9 @@ def analyze(
             detail=f"message too large ({len(raw)} bytes, limit {MAX_BYTES})")
 
     try:
-        result = analyze_email(
-            raw, model=model, host=host, prompt_version=prompt_version,
-            body_chars=body_chars, retries=retries,
-            include_bundle=include_bundle)
+           result = analyze_email(
+            raw, prompt_version=prompt_version, body_chars=body_chars,
+            retries=retries, include_bundle=include_bundle)
     except AnalyzerError as exc:
         # Ollama unreachable is a dependency failure, not a client error.
         raise HTTPException(status_code=503, detail=str(exc)) from exc

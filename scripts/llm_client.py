@@ -1,21 +1,17 @@
 #!/usr/bin/env python3
 """
-llm_client.py — Day 4. Talks to Ollama on the host and returns validated JSON.
+llm_client.py — Ollama client returning validated JSON verdicts.
 
-Transport is stdlib urllib, not the `ollama` package: one fewer dependency,
-and the host-only network setup (VM -> 192.168.56.1:11434) is a plain HTTP
-call. Same reasoning as choosing stdlib `email` over mail-parser on Day 3.
+Transport is stdlib urllib, no SDK. The substance is failure handling: a small
+model returns malformed JSON often enough that blind retrying is not a
+strategy. Each rung is recorded so its frequency can be reported.
 
-The interesting part is not the HTTP call, it is the failure ladder. Small
-models return malformed JSON often enough that "retry until it works" is not
-a strategy — you need to know HOW it failed, because that is a measurable
-result for the evaluation chapter.
+  1. format="json"     Ollama constrains decoding to valid JSON grammar.
+  2. local repair      Strip fences/preamble, close truncated objects. No model call.
+  3. retry with nudge  Re-ask with a "JSON only" reminder.
+  4. give up           Return a structured insufficient_evidence result. Never raises.
 
-Failure ladder (each rung recorded in the log):
-  1. format="json"      Ollama constrains decoding to valid JSON grammar.
-  2. local repair       Strip fences/preamble, balance braces. No LLM call.
-  3. retry with nudge   Re-ask, appending a "valid JSON only" reminder.
-  4. give up            Return a structured failure record, never raise.
+Configuration: PA_OLLAMA_URL (default http://127.0.0.1:11434), PA_MODEL (default llama3.2).
 """
 
 from __future__ import annotations
@@ -27,7 +23,7 @@ import time
 import urllib.error
 import urllib.request
 
-DEFAULT_HOST = os.environ.get("OLLAMA_HOST", "http://192.168.56.1:11434")
+DEFAULT_HOST = os.environ.get("PA_OLLAMA_URL", "http://127.0.0.1:11434") 
 DEFAULT_MODEL = os.environ.get("PA_MODEL", "llama3.2")
 DEFAULT_TIMEOUT = 180
 
@@ -263,8 +259,8 @@ class OllamaClient:
         except urllib.error.URLError as exc:
             raise OllamaError(
                 f"Cannot reach Ollama at {self.host} ({exc.reason}). "
-                "Is `ollama serve` running on the host, with OLLAMA_HOST=0.0.0.0:11434 "
-                "and the firewall rule for TCP 11434 in place?"
+                "Check that `ollama serve` is running and reachable from this "
+                "machine, and that PA_OLLAMA_URL points at it."
             ) from exc
         except TimeoutError as exc:
             raise OllamaError(f"Request timed out after {self.timeout}s") from exc

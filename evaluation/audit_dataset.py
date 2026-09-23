@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-audit_dataset.py — Day 5. Checks the corpus for provenance artefacts.
+audit_dataset.py — checks the corpus
 
 WHY THIS EXISTS
 
@@ -37,7 +37,7 @@ better, act on it: report metrics with the suspect features suppressed as a
 sensitivity analysis.
 
 Usage:
-    python3 scripts/audit_dataset.py --dataset dataset/ --out dataset/audit.json
+    python3 evaluation/audit_dataset.py --dataset dataset/ --out dataset/audit.json
 """
 
 from __future__ import annotations
