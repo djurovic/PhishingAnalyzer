@@ -10,3 +10,4 @@ tldextract>=5.0
 python-magic>=0.4.27    # requires libmagic: sudo apt install -y libmagic1
 
 # The evaluation/ scripts use the standard library only.
+aiosmtpd>=1.4
